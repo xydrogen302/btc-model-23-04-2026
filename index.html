@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" href="favicon.ico">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Probabilistic Modeling Terminal</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #000000;
+    color: #e0e3ec;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    padding: 18px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .app { max-width: 1380px; margin: 0 auto; }
+
+  /* Header */
+  .header { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: nowrap;
+  }
+  .title {
+    font-size: clamp(30px, 8vw, 56px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -1.8px;
+    color: #e0e3ec;
+    font-family: "Arial Black", "Helvetica Neue", Arial, system-ui, sans-serif;
+    text-transform: uppercase;
+  }
+  .refresh-btn {
+    width: 40px; height: 40px; min-width: 40px;
+    border-radius: 50%; border: none;
+    background: #e6e6e6; color: #000000;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .refresh-btn.refreshing { background: #cfcfcf; cursor: wait; opacity: 0.8; }
+  .refresh-btn svg { transition: transform 0.2s ease; }
+  .refresh-btn.refreshing svg { transform: rotate(180deg); }
+
+  .sub-line { font-size: 11px; color: #5a6280; line-height: 1.25; }
+
+  .badge-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .badge {
+    border: 1px solid #1a1d26;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #e0e3ec;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .badge-risk-on {
+    border: 1px solid #00e676;
+    background: rgba(0,230,118,0.1);
+    color: #00e676;
+  }
+  .badge-risk-off {
+    border: 1px solid #ff4757;
+    background: rgba(255,71,87,0.08);
+    color: #ff4757;
+  }
+
+  /* Cards */
+  .crd {
+    background: #000000;
+    border: 1px solid #1a1d26;
+    border-radius: 0;
+    padding: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+  }
+  .sec-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #5a6280;
+    margin: 6px 0 10px;
+  }
+  .mini-label {
+    font-size: 8px;
+    color: #5a6280;
+    text-transform: uppercase;
+  }
+  .mini-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #e0e3ec;
+    margin-top: 4px;
+    word-break: break-word;
+  }
+  .mini-sub {
+    font-size: 9px;
+    color: #7a8299;
+    margin-top: 4px;
+  }
+
+  /* Grid */
+  .grid-top {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .grid-top.mobile { grid-template-columns: 1fr; }
+  .grid-auto-220 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .grid-auto-230 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+}
+  .grid-auto-320 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 10px;
+  }
+
+  /* Tabs */
+  .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab-btn {
+    background: #000000;
+    color: #7a8299;
+    border: 1px solid #1a1d26;
+    border-radius: 0;
+    padding: 8px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tab-btn.active {
+    background: #111521;
+    color: #e0e3ec;
+  }
+
+  /* Pivot grid */
+  .pivot-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .pivot-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .piv-r { color: #00e676; }
+  .piv-p { color: #e0e3ec; }
+  .piv-s { color: #ff4757; }
+
+  .pivot-head {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .pivot-title { font-size: 14px; font-weight: 700; }
+  .pivot-title-sm { font-size: 12px; font-weight: 700; }
+  .pivot-zone { font-size: 11px; color: #7a8299; }
+
+  /* Indicator matrix */
+  .ind-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 10px;
+  align-items: start;
+}
+
+.ind-grid > div {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+  /* Warnings */
+  .warn-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .warn-pill {
+    font-size: 11px;
+    color: #ffab00;
+    border: 1px solid #1a1d26;
+    padding: 6px 8px;
+  }
+
+  /* Override input */
+  .override-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #7a8299;
+    cursor: pointer;
+  }
+  .override-label input[type="checkbox"] { accent-color: #e0e3ec; }
+  .override-input {
+    width: 100%;
+    margin-top: 8px;
+    background: #000000;
+    border: 1px solid #1a1d26;
+    color: #e0e3ec;
+    border-radius: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .override-input:focus { outline: 1px solid #2a2d36; }
+  .override-hint { font-size: 11px; color: #7a8299; margin-top: 8px; }
+
+  .hidden { display: none !important; }
+
+  /* EIS label color variants */
+  .eis-green { color: #00e676; }
+  .eis-red { color: #ff4757; }
+  .eis-blue { color: #ffab00; }
+.ind-matrix .crd {
+  padding: 18px;
+  min-height: 170px;
+}
+
+  /* V11.1 mobile speed improvements */
+  .crd { content-visibility: auto; contain-intrinsic-size: 160px; }
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    .grid-auto-230 { grid-template-columns: 1fr; }
+    .grid-auto-320 { grid-template-columns: 1fr; }
+  }
+
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-row">
+      <div class="title">BTC MODEL V1.1</div>
+      <button id="refreshBtn" class="refresh-btn" title="Refresh" aria-label="Refresh">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="sub-line" id="subLine">Waiting for first refresh</div>
+    <div class="badge-row">
+      <div class="badge" id="liveBadge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M2 8.82C6.97 4.94 17.03 4.94 22 8.82" stroke="#e0e3ec" stroke-width="2" stroke-linecap="round"/>
+          <path d="M5 12.55C8.88 9.65 15.12 9.65 19 12.55" stroke="#e0e3ec" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8.5 16.28C10.83 14.36 13.17 14.36 15.5 16.28" stroke="#e0e3ec" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="19" r="1.5" fill="#e0e3ec"/>
+        </svg>
+        <span id="liveLabel">Offline</span>
+      </div>
+      <div class="badge" id="riskBadge">Risk-On</div>
+    </div>
+  </div>
+
+  <!-- WARNINGS -->
+  <div class="crd hidden" id="warnCard" style="margin-bottom:12px;">
+    <div class="mini-label">Warnings</div>
+    <div class="warn-wrap" id="warnWrap"></div>
+  </div>
+
+  <!-- TOP STATS -->
+  <div class="grid-top" id="topGrid"></div>
+
+  <!-- TABS -->
+  <div class="tab-row" id="tabRow"></div>
+
+  <!-- PANELS -->
+  <div id="tabOverview"></div>
+  <div id="tabPivots" class="hidden"></div>
+  <div id="tabProb" class="hidden"></div>
+  <div id="tabAlloc" class="hidden"></div>
+  <div id="tabMatrix" class="hidden"></div>
+  <div id="tabMarket" class="hidden"></div>
+</div>
+
+<script>
+/* ==========================================================
+   BTC MODEL V11.1 — Fast HTML port
+   Preserves exact engine, thresholds, colours, fonts, layout
+   ========================================================== */
+
+const TF = ["1M", "1W", "1D", "4H", "1H"];
+const TF_ALL = ["1Y", "1M", "1W", "1D", "4H", "1H"];
+const META = {
+  "1Y": { label: "Yearly",  w: 3.0, interval: "1M" },
+  "1M": { label: "Monthly", w: 2.5, interval: "1M" },
+  "1W": { label: "Weekly",  w: 2.0, interval: "1w" },
+  "1D": { label: "Daily",   w: 1.5, interval: "1d" },
+  "4H": { label: "4-Hour",  w: 1.0, interval: "4h" },
+  "1H": { label: "1-Hour",  w: 0.5, interval: "1h" },
+};
+
+const LOGISTIC_K = 11;
+const CAPITAL0 = 100000;
+const FALLBACK_REALIZED_PRICE = null;
+
+const CALIBRATION = {
+  baseRate: 0.6268656716417911,
+  intercept: 0.8630261775014366,
+  cvAuc: 0.68,
+  cvBrier: 0.21,
+  targetDefinition: "> +10% forward 6M return",
+  defaults: {
+  mvrv: 1.4,
+  vmr: 0.08,
+  vmr30: 0.08,
+  vmrRel: 1.0,
+},
+  means:    { rsi2: 59.909576050230406, mvrv: 1.7331691774223161 },
+  scales:   { rsi2: 31.168718079818465, mvrv: 0.628922481448045 },
+  coefs:    { rsi2: -0.1534871892421175, mvrv: -0.6765971090352073 },
+};
+
+/* ---------- utilities ---------- */
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+function safeNumber(v, fb = null) { return Number.isFinite(v) ? v : fb; }
+function safeRatio(num, den, fb = null) {
+  if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return fb;
+  const out = num / den;
+  return Number.isFinite(out) ? out : fb;
+}
+function f$(n) { return Number.isFinite(n) ? "$" + Math.round(n).toLocaleString("en-US") : "—"; }
+function fp(n) { return Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "—"; }
+function f1(n) { return Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"; }
+function f4(n) { return Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : "—"; }
+function fx(n) { return Number.isFinite(n) ? n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "×" : "—"; }
+
+function ema(values, period) {
+  if (!Array.isArray(values) || values.length < period) return null;
+  const k = 2 / (period + 1);
+  let prev = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < values.length; i++) prev = values[i] * k + prev * (1 - k);
+  return prev;
+}
+function emaSeries(values, period) {
+  if (!Array.isArray(values) || values.length < period) return [];
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  out[period - 1] = prev;
+  for (let i = period; i < values.length; i++) {
+    prev = values[i] * k + prev * (1 - k);
+    out[i] = prev;
+  }
+  return out;
+}
+function sma(values, period) {
+  if (!Array.isArray(values) || values.length < period) return null;
+  const slice = values.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
+}
+function rsi(values, period = 14) {
+  if (!Array.isArray(values) || values.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = values[i] - values[i - 1];
+    if (diff >= 0) gains += diff; else losses -= diff;
+  }
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+  for (let i = period + 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    const gain = diff > 0 ? diff : 0;
+    const loss = diff < 0 ? -diff : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+  }
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - 100 / (1 + rs);
+}
+function rsiSeries(values, period = 2) {
+  const out = [];
+  for (let i = period + 1; i <= values.length; i++) out.push(rsi(values.slice(0, i), period));
+  return out.filter((v) => Number.isFinite(v));
+}
+function macd(values, fast = 12, slow = 26, signal = 9) {
+  if (!Array.isArray(values) || values.length < slow + signal) return { line: null, signal: null, hist: null };
+  const fastSeries = emaSeries(values, fast);
+  const slowSeries = emaSeries(values, slow);
+  const macdSer = values.map((_, i) => {
+    const f = fastSeries[i], s = slowSeries[i];
+    return Number.isFinite(f) && Number.isFinite(s) ? f - s : null;
+  }).filter((v) => Number.isFinite(v));
+  const signalValue = ema(macdSer, signal);
+  const lineValue = macdSer[macdSer.length - 1];
+  return {
+    line: lineValue,
+    signal: signalValue,
+    hist: Number.isFinite(lineValue) && Number.isFinite(signalValue) ? lineValue - signalValue : null,
+  };
+}
+function elderForceIndex(closes, volumes, period = 2) {
+  if (!Array.isArray(closes) || !Array.isArray(volumes) || closes.length < 2 || volumes.length < 2) return null;
+  const raw = [];
+  for (let i = 1; i < closes.length; i++) raw.push((closes[i] - closes[i - 1]) * volumes[i]);
+  return ema(raw, period);
+}
+
+/* ---------- pivots ---------- */
+function calcPivots(o) {
+  const H = safeNumber(o?.H, 0);
+  const L = safeNumber(o?.L, 0);
+  const C = safeNumber(o?.C, 0);
+  const P = (H + L + C) / 3;
+  return {
+    R5: 4 * P + (H - 4 * L),
+    R4: 3 * P + (H - 3 * L),
+    R3: 2 * P + (H - 2 * L),
+    R2: P + (H - L),
+    R1: 2 * P - L,
+    P,
+    S1: 2 * P - H,
+    S2: P - (H - L),
+    S3: 2 * P - (2 * H - L),
+    S4: 3 * P - (3 * H - L),
+    S5: 4 * P - (4 * H - L),
+  };
+}
+function pivotScore(pv, px) {
+  if (!pv || !Number.isFinite(px)) return 0;
+  let s = 0;
+  if (px > pv.P) s += 2; else s -= 2;
+  if (px > pv.R1) s += 1;
+  if (px > pv.R2) s += 1;
+  if (px < pv.S1) s -= 1;
+  if (px < pv.S2) s -= 1;
+  return s;
+}
+function pivotZone(pv, px) {
+  if (!pv || !Number.isFinite(px)) return "—";
+  if (px >= pv.R5) return "R5+";
+  if (px >= pv.R4) return "R4-R5";
+  if (px >= pv.R3) return "R3-R4";
+  if (px >= pv.R2) return "R2-R3";
+  if (px >= pv.R1) return "R1-R2";
+  if (px >= pv.P)  return "P-R1";
+  if (px >= pv.S1) return "S1-P";
+  if (px >= pv.S2) return "S2-S1";
+  if (px >= pv.S3) return "S3-S2";
+  if (px >= pv.S4) return "S4-S3";
+  if (px >= pv.S5) return "S5-S4";
+  return "<S5";
+}
+
+/* ---------- EIS / scoring ---------- */
+function eisColor(ind) {
+  const ema13 = safeNumber(ind?.ema13, null);
+  const ema13Prev = safeNumber(ind?.ema13Prev, null);
+  const macdH = safeNumber(ind?.macdH, null);
+  const macdHPrev = safeNumber(ind?.macdHPrev, null);
+  const emaRising = Number.isFinite(ema13) && Number.isFinite(ema13Prev) && ema13 > ema13Prev;
+  const emaFalling = Number.isFinite(ema13) && Number.isFinite(ema13Prev) && ema13 < ema13Prev;
+  const histRising = Number.isFinite(macdH) && Number.isFinite(macdHPrev) && macdH > macdHPrev;
+  const histFalling = Number.isFinite(macdH) && Number.isFinite(macdHPrev) && macdH < macdHPrev;
+  if (emaRising && histRising) return "green";
+  if (emaFalling && histFalling) return "red";
+  return "blue";
+}
+function indScore(ind, px) {
+  if (!ind || !Number.isFinite(px)) return 0;
+  let s = 0;
+  if (px > safeNumber(ind.ema10, px)) s += 1;
+  if (px > safeNumber(ind.ema20, px)) s += 1;
+  if (px < safeNumber(ind.ema50, px)) s -= 1;
+  if (safeNumber(ind.ema10, 0) > safeNumber(ind.ema20, 0)) s += 1;
+  if (safeNumber(ind.macdH, 0) > 0) s += 1;
+  if (safeNumber(ind.macdL, 0) > safeNumber(ind.macdS, 0)) s += 1;
+  if (safeNumber(ind.efi2, 0) > 0) s += 1;
+  if (safeNumber(ind.rsi2, 0) > safeNumber(ind.sma14rsi, 0)) s += 1;
+  const eis = eisColor(ind);
+  if (eis === "green") s += 1;
+  if (eis === "red") s -= 1;
+  return s;
+}
+function logisticFromScore(x, k = LOGISTIC_K) {
+  const safeX = safeNumber(x, 0);
+  return 1 / (1 + Math.exp(-safeX / k));
+}
+function mvrvScore(mvrv) {
+  const m = safeNumber(mvrv, CALIBRATION.defaults.mvrv);
+  let s = 0;
+  if (m < 1.0) s += 5;
+  else if (m < 1.2) s += 4;
+  else if (m < 1.3) s += 3;
+  else if (m < 1.6) s += 1;
+  else if (m > 3.2) s -= 5;
+  else if (m > 2.7) s -= 4;
+  else if (m > 2.2) s -= 2;
+  return s;
+}
+function vmrScore(vmr, vmr30) {
+  // VMR defaults are explicitly defined to prevent silent degradation during feed failure.
+  const v = safeNumber(vmr, CALIBRATION.defaults.vmr);
+  const baseline = safeNumber(vmr30, v);
+  const ratio = baseline > 0 ? v / baseline : 1;
+  let s = 0;
+  if (v >= 0.3) s += 4;
+  else if (v >= 0.2) s += 3;
+  else if (v >= 0.1) s += 2;
+  else if (v >= 0.06) s += 1;
+  else if (v < 0.03) s -= 2;
+  if (ratio >= 1.5) s += 2;
+  else if (ratio >= 1.15) s += 1;
+  else if (ratio < 0.75) s -= 1;
+  return s;
+}
+function confluenceScore({ ind, confl }) {
+  const rsiMonthly = safeNumber(ind?.["1M"]?.rsi2, 50);
+  const rsiWeekly  = safeNumber(ind?.["1W"]?.rsi2, 50);
+  const mvrv = safeNumber(confl?.mvrv, CALIBRATION.defaults.mvrv);
+  const vmr  = safeNumber(confl?.vmr, CALIBRATION.defaults.vmr);
+  const vmr30 = safeNumber(confl?.vmr30, vmr);
+  const macdD = safeNumber(ind?.["1D"]?.macdH, 0);
+  let s = 0;
+  s += mvrvScore(mvrv);
+  s += vmrScore(vmr, vmr30);
+  if (rsiMonthly < 20 && mvrv < 1.3) s += 4;
+  if (rsiMonthly < 10 && mvrv < 1.2) s += 5;
+  if (rsiMonthly <  5 && mvrv < 1.2) s += 6;
+  if (rsiWeekly  < 20 && mvrv < 1.3) s += 2;
+  if (rsiMonthly > 90 && mvrv > 2.7) s -= 5;
+  if (rsiMonthly > 95 && mvrv > 3.0) s -= 6;
+  if (vmr >= 0.1 && vmr > vmr30 && macdD > 0) s += 2;
+  if (vmr < vmr30 && macdD < 0) s -= 2;
+  return s;
+}
+function standardizedFeature(value, mean, scale) {
+  if (!Number.isFinite(value)) return 0;
+  return (value - mean) / (scale || 1);
+}
+function sanitizeFeatures(features, calibration) {
+  const clean = {};
+  Object.keys(calibration.means).forEach((k) => {
+    const v = features[k];
+    clean[k] = Number.isFinite(v) ? v : calibration.means[k];
+  });
+  return clean;
+}
+function buildHistoricalCalibrationFeatures(px, piv1M, ind, confl) {
+  const rsi2m = safeNumber(ind?.["1M"]?.rsi2, CALIBRATION.means.rsi2);
+  const mvrv = safeNumber(confl?.mvrv, CALIBRATION.means.mvrv);
+  return sanitizeFeatures({ rsi2: rsi2m, mvrv }, CALIBRATION);
+}
+function calibratedHistoricalBullProbability(px, piv1M, ind, confl) {
+  const f = buildHistoricalCalibrationFeatures(px, piv1M, ind, confl);
+  let z = CALIBRATION.intercept;
+  Object.keys(CALIBRATION.coefs).forEach((k) => {
+    const x = standardizedFeature(f[k], CALIBRATION.means[k], CALIBRATION.scales[k]);
+    z += CALIBRATION.coefs[k] * x;
+  });
+  if (Number.isFinite(px) && Number.isFinite(piv1M?.P) && px < piv1M.P) z -= 0.25;
+  if (Number.isFinite(px) && Number.isFinite(piv1M?.P) && px >= piv1M.P) z += 0.15;
+  if (!Number.isFinite(z)) return CALIBRATION.baseRate;
+  return clamp(1 / (1 + Math.exp(-z)), 0.01, 0.99);
+}
+function regimeLabel({ pBull, px, piv1Y, piv1M, ind, confl, gates }) {
+  const monthlyRsi = safeNumber(ind?.["1M"]?.rsi2, 50);
+  const mvrv = safeNumber(confl?.mvrv, CALIBRATION.defaults.mvrv);
+  const realized = safeNumber(confl?.realizedPrice, null);
+  const realizedGap = safeRatio(px, realized, null);
+  if (gates?.foundationBuy) return "High-Conviction Accumulation";
+  if (Number.isFinite(realizedGap) && realizedGap > 2.4) return "Distribution (Valuation)";
+  if (gates?.bearGateActive) {
+    if (Number.isFinite(mvrv) && mvrv > 2.0) return "Distribution (Valuation)";
+    return "Capital Preservation / Drawdown";
+  }
+  if (monthlyRsi < 20 && mvrv < 1.3) return "High-Conviction Accumulation";
+  if (Number.isFinite(px) && Number.isFinite(piv1Y?.P) && px < piv1Y.P && monthlyRsi < 40) {
+    return "Capital Preservation / Drawdown";
+  }
+  if (gates?.bullTrendAllowed && Number.isFinite(px) && Number.isFinite(piv1M?.P) && px > piv1M.P && pBull >= 0.65) {
+    return "Primary Bull Expansion";
+  }
+  return pBull >= 0.5 ? "Accumulation / Repair" : "Weak / Bearish Bias";
+}
+function bucketProbability(p) {
+  if (!Number.isFinite(p)) return "—";
+  if (p >= 0.75) return "High";
+  if (p >= 0.6)  return "Medium";
+  return "Low";
+}
+function mvrvBandLabel(mvrv) {
+  const m = safeNumber(mvrv, null);
+  if (!Number.isFinite(m)) return "—";
+  if (m < 1.0) return "Deeply Undervalued";
+  if (m < 1.3) return "Accumulation";
+  if (m < 1.8) return "Fair / Mildly Rich";
+  if (m < 2.4) return "Expensive";
+  return "Distribution Risk";
+}
+
+/* ---------- allocation ---------- */
+function buildAllocation({ pBull, pBear, regime, allPV, capital, gates }) {
+  const y = allPV["1Y"] || {};
+  const m = allPV["1M"] || {};
+  const w = allPV["1W"] || {};
+  const d = allPV["1D"] || {};
+  const cap = safeNumber(capital, 0);
+
+  let deployPct = 0.1;
+  let action = "Balanced / Wait for Edge";
+
+  if (gates?.foundationBuy) {
+    deployPct = 0.4; action = "Foundation Buy Deployment";
+  } else if (gates?.bearGateActive) {
+    deployPct = 0.1; action = "Defend Capital";
+  } else if (regime === "Primary Bull Expansion") {
+    deployPct = 0.55; action = "Risk-On Deployment";
+  } else if (regime === "Accumulation / Repair") {
+    deployPct = 0.3; action = "Selective Deployment";
+  } else if (regime === "Distribution (Valuation)") {
+    deployPct = 0.05; action = "Distribution / Reduce Risk";
+  } else if (regime === "Weak / Bearish Bias") {
+    deployPct = 0.12; action = "Balanced / Wait for Edge";
+  } else if (regime === "Capital Preservation / Drawdown") {
+    deployPct = 0.08; action = "Defend Capital";
+  }
+  deployPct = clamp(deployPct, 0, 1);
+
+  let corePct = 0, tacticalPct = 0, hedgePct = 0;
+  if (gates?.foundationBuy) { corePct = 0.28; tacticalPct = 0.12; hedgePct = 0; }
+  else if (gates?.bearGateActive) { corePct = 0.08; tacticalPct = 0; hedgePct = 0.12; }
+  else if (regime === "Primary Bull Expansion") { corePct = 0.33; tacticalPct = 0.22; hedgePct = 0; }
+  else if (regime === "Accumulation / Repair") { corePct = 0.22; tacticalPct = 0.08; hedgePct = 0; }
+  else if (regime === "Distribution (Valuation)") { corePct = 0.05; tacticalPct = 0; hedgePct = 0.15; }
+  else if (regime === "Weak / Bearish Bias") { corePct = 0.1; tacticalPct = 0.02; hedgePct = 0.08; }
+  else if (regime === "Capital Preservation / Drawdown") { corePct = 0.05; tacticalPct = 0; hedgePct = 0.15; }
+
+  let dryPowderPct = Math.max(0, 1 - corePct - tacticalPct - hedgePct);
+  const total = corePct + tacticalPct + hedgePct + dryPowderPct;
+  if (total > 0) {
+    corePct /= total; tacticalPct /= total; hedgePct /= total; dryPowderPct /= total;
+  }
+
+  return {
+    action, deployPct, corePct, tacticalPct, dryPowderPct, hedgePct,
+    coreUsd: cap * corePct, tacticalUsd: cap * tacticalPct,
+    dryPowderUsd: cap * dryPowderPct, hedgeUsd: cap * hedgePct,
+    deployUsd: cap * deployPct,
+    add1: safeNumber(w.S1, safeNumber(m.S1, null)),
+    add2: safeNumber(m.S1, safeNumber(y.S1, null)),
+    add3: safeNumber(m.S2, safeNumber(y.S2, null)),
+    trim1: safeNumber(d.R1, safeNumber(w.R1, null)),
+    trim2: safeNumber(m.R1, safeNumber(y.R1, null)),
+    trim3: safeNumber(m.R2, safeNumber(y.R2, null)),
+  };
+}
+
+/* ---------- Live data fetch ---------- */
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function saveCache() {
+  try { localStorage.setItem("btc_model_v11_1_live_baseline_cache", JSON.stringify({ engine: state.engine, lastRefresh: state.lastRefresh ? state.lastRefresh.toISOString() : null })); } catch (_) {}
+}
+function loadCache() {
+  try {
+    const raw = localStorage.getItem("btc_model_v11_1_live_baseline_cache");
+    if (!raw) return false;
+    const cached = JSON.parse(raw);
+    if (!cached || !cached.engine) return false;
+    state.engine = cached.engine;
+    state.lastRefresh = cached.lastRefresh ? new Date(cached.lastRefresh) : null;
+    return true;
+  } catch (_) { return false; }
+}
+
+async function fetchBinanceKlines(interval, limit = 300) {
+  const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error(`Binance ${interval} failed`);
+  const raw = await res.json();
+  return raw.map((r) => ({
+    openTime: r[0],
+    open:  parseFloat(r[1]),
+    high:  parseFloat(r[2]),
+    low:   parseFloat(r[3]),
+    close: parseFloat(r[4]),
+    volume:parseFloat(r[5]),
+    closeTime: r[6],
+  }));
+}
+
+function deriveTimeframeFromKlines(tf, klines) {
+  if (!Array.isArray(klines) || klines.length < 60) return null;
+  const closes  = klines.map((k) => k.close);
+  const volumes = klines.map((k) => k.volume);
+  const last = klines[klines.length - 1];
+  const prev = klines[klines.length - 2];
+
+  const ema10 = ema(closes, 10);
+  const ema20 = ema(closes, 20);
+  const ema50 = ema(closes, 50);
+  const ema13 = ema(closes, 13);
+  const ema13Prev = ema(closes.slice(0, -1), 13);
+  const mac     = macd(closes, 12, 26, 9);
+  const macPrev = macd(closes.slice(0, -1), 12, 26, 9);
+  const rsi2Ser = rsiSeries(closes, 2);
+  const rsi2 = rsi2Ser[rsi2Ser.length - 1];
+  const sma14rsi = sma(rsi2Ser, 14);
+  const efi2 = elderForceIndex(closes, volumes, 2);
+
+  return {
+    tf,
+    ohlc: { O: last.open, H: prev.high, L: prev.low, C: prev.close },
+    ind: {
+      ema10, ema20, ema50, ema13, ema13Prev,
+      macdL: mac.line, macdS: mac.signal, macdH: mac.hist, macdHPrev: macPrev.hist,
+      efi2, rsi2, sma14rsi,
+    },
+  };
+}
+
+function deriveYearlyFromMonthly(k1m) {
+  if (!Array.isArray(k1m) || k1m.length < 13) return null;
+  const latest = k1m[k1m.length - 1];
+  const latestDate = new Date(latest.closeTime || latest.openTime);
+  const currentYear = latestDate.getUTCFullYear();
+  const priorYear = currentYear - 1;
+  const priorYearCandles = k1m.filter((c) => new Date(c.openTime).getUTCFullYear() === priorYear);
+  if (priorYearCandles.length < 12) return null;
+  const H = Math.max(...priorYearCandles.map((c) => c.high));
+  const L = Math.min(...priorYearCandles.map((c) => c.low));
+  const C = priorYearCandles[priorYearCandles.length - 1].close;
+  const O = priorYearCandles[0].open;
+  return { O, H, L, C, year: priorYear };
+}
+
+async function fetchMarketPack() {
+  // Fast first-paint request: live spot, market cap and 24H volume only.
+  // If CoinGecko simple/price omits market cap or volume, fall back to coins/markets.
+  const priceRes = await fetchWithTimeout(
+    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true",
+    {},
+    7000
+  );
+  if (!priceRes.ok) throw new Error("CoinGecko market failed");
+  const priceData = await priceRes.json();
+  const btc = priceData.bitcoin;
+  if (!btc) throw new Error("No bitcoin market data");
+
+  let price = safeNumber(btc.usd, null);
+  let marketCap = safeNumber(btc.usd_market_cap, null);
+  let spotVolume = safeNumber(btc.usd_24h_vol, null);
+
+  // Robust fallback: some mobile/browser/API responses can return price but omit cap/volume.
+  if (!Number.isFinite(marketCap) || !Number.isFinite(spotVolume)) {
+    try {
+      const marketsRes = await fetchWithTimeout(
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin&order=market_cap_desc&per_page=1&page=1&sparkline=false",
+        {},
+        7000
+      );
+      if (marketsRes.ok) {
+        const rows = await marketsRes.json();
+        const row = Array.isArray(rows) ? rows[0] : null;
+        if (row) {
+          price = safeNumber(row.current_price, price);
+          marketCap = safeNumber(row.market_cap, marketCap);
+          spotVolume = safeNumber(row.total_volume, spotVolume);
+        }
+      }
+    } catch (_) {
+      // Keep simple/price values if fallback fails.
+    }
+  }
+
+  return {
+    price,
+    marketCap,
+    spotVolume,
+    vmrBaseline30d: null,
+  };
+}
+async function fetchLiveVmrBaseline30d() {
+  // Live 30D VMR baseline = average(CoinGecko daily volume / market cap) over 30 days.
+  const histRes = await fetchWithTimeout(
+    "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily",
+    {},
+    14000
+  );
+  if (!histRes.ok) throw new Error("CoinGecko 30D VMR baseline failed");
+  const hist = await histRes.json();
+  const marketCaps = Array.isArray(hist?.market_caps) ? hist.market_caps : [];
+  const volumes = Array.isArray(hist?.total_volumes) ? hist.total_volumes : [];
+  const vals = [];
+  const n = Math.min(marketCaps.length, volumes.length);
+  for (let i = 0; i < n; i++) {
+    const mc = safeNumber(marketCaps[i]?.[1], null);
+    const vol = safeNumber(volumes[i]?.[1], null);
+    if (Number.isFinite(mc) && Number.isFinite(vol) && mc > 0) vals.push(vol / mc);
+  }
+  if (!vals.length) throw new Error("No valid 30D VMR samples");
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function applyVmrBaseline30d(vmr30, sourceLabel) {
+  if (!Number.isFinite(vmr30) || vmr30 <= 0 || !state.engine?.confl) return;
+  const vmr = safeNumber(state.engine.confl.vmr, CALIBRATION.defaults.vmr);
+  state.engine.confl.vmr30 = vmr30;
+  state.engine.confl.vmr30Model = vmr30;
+  state.engine.confl.vmrRel = Number.isFinite(vmr) && vmr30 > 0 ? vmr / vmr30 : CALIBRATION.defaults.vmrRel;
+  state.engine.confl.vmrBaselineSource = sourceLabel || "CoinGecko 30D live";
+  state.engine.sourceSummary = state.engine.sourceSummary || {};
+  state.engine.sourceSummary.vmrBaseline = state.engine.confl.vmrBaselineSource;
+  saveCache();
+  render();
+}
+
+async function refreshLiveVmrBaseline30d() {
+  try {
+    const vmr30 = await fetchLiveVmrBaseline30d();
+    applyVmrBaseline30d(vmr30, "CoinGecko 30D live");
+  } catch (_) {
+    // Keep cached/fallback baseline; do not block the model.
+  }
+}
+/* ---------- CoinMetrics realized price (live anchor) ---------- */
+async function fetchCoinMetricsMVRV() {
+  const url = "https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=CapMVRVCur&page_size=1&frequency=1d&sort=time";
+  try {
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const row = Array.isArray(data?.data) ? data.data[0] : null;
+    if (!row) return null;
+
+    const mvrv = parseFloat(row.CapMVRVCur);
+    if (!Number.isFinite(mvrv) || mvrv <= 0) return null;
+
+    return {
+      source: "CoinMetrics",
+      mvrv,
+      timestamp: row.time,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/* ---------- Engine state ---------- */
+const state = {
+  capital: CAPITAL0,
+  tab: "overview",
+  live: true,
+  lastRefresh: null,
+  error: "",
+  dataWarnings: [],
+  valuationSource: "Manual",
+  isRefreshing: false,
+  isMobile: window.innerWidth < 768,
+  engine: {
+    px: null, marketCap: null, spotVolume: null,
+    confl: {
+      spotPrice: null,
+      mvrv: CALIBRATION.defaults.mvrv,
+      vmr: CALIBRATION.defaults.vmr,
+      vmr30: CALIBRATION.defaults.vmr30,
+      vmrRel: CALIBRATION.defaults.vmrRel,
+      vmr30Model: CALIBRATION.defaults.vmr30,
+      vmrBaselineSource: "Fallback",
+      realizedPrice: FALLBACK_REALIZED_PRICE,
+      computedRealizedPrice: FALLBACK_REALIZED_PRICE,
+      realizedCap: null,
+      vmrFeedValid: false,
+    },
+    ohlc: {},
+    ind: {},
+    sourceSummary: {
+      spot: "CoinGecko",
+      technicals: "Binance K-Lines → computed in app",
+      valuation: "Manual fallback",
+    },
+  },
+};
+
+let refreshInterval = null;
+
+/* ---------- Hydration ---------- */
+async function hydrateEngine() {
+  state.isRefreshing = true;
+  state.error = "";
+  render();
+
+  try {
+    const [k1m, k1w, k1d, k4h, k1h, market, anchor] = await Promise.all([
+      fetchBinanceKlines("1M", 120),
+      fetchBinanceKlines("1w", 260),
+      fetchBinanceKlines("1d", 300),
+      fetchBinanceKlines("4h", 300),
+      fetchBinanceKlines("1h", 300),
+      fetchMarketPack(),
+      fetchCoinMetricsMVRV(),
+    ]);
+
+    const d1M = deriveTimeframeFromKlines("1M", k1m);
+    const d1W = deriveTimeframeFromKlines("1W", k1w);
+    const d1D = deriveTimeframeFromKlines("1D", k1d);
+    const d4H = deriveTimeframeFromKlines("4H", k4h);
+    const d1H = deriveTimeframeFromKlines("1H", k1h);
+    const y1  = deriveYearlyFromMonthly(k1m);
+
+    const px = safeNumber(market?.price, d1D?.ohlc?.C ?? null);
+    const marketCap = safeNumber(market?.marketCap, null);
+    const spotVolume = safeNumber(market?.spotVolume, null);
+
+    const warnings = [];
+    if (!Number.isFinite(px)) warnings.push("Spot price unavailable");
+    if (!d1M || !d1W || !d1D || !d4H || !d1H) warnings.push("One or more technical feeds incomplete");
+    if (!y1) warnings.push("Yearly pivot source incomplete");
+
+let valuationSourceLabel = "CoinMetrics MVRV";
+let realizedPrice = FALLBACK_REALIZED_PRICE;
+let computedRealizedPrice = FALLBACK_REALIZED_PRICE;
+let mvrv = CALIBRATION.defaults.mvrv;
+
+// Primary source: CoinMetrics MVRV
+if (anchor && Number.isFinite(anchor.mvrv) && anchor.mvrv > 0 && Number.isFinite(px)) {
+  mvrv = anchor.mvrv;
+  realizedPrice = px / mvrv;
+  computedRealizedPrice = realizedPrice;
+  valuationSourceLabel = "CoinMetrics MVRV";
+}
+else {
+  // fallback to default MVRV assumption
+  mvrv = CALIBRATION.defaults.mvrv;
+  realizedPrice = px / mvrv;
+  computedRealizedPrice = realizedPrice;
+  valuationSourceLabel = "Fallback (Default MVRV)";
+}
+
+    const realizedCap = (Number.isFinite(marketCap) && Number.isFinite(px) && Number.isFinite(realizedPrice) && px > 0)
+      ? marketCap * (realizedPrice / px)
+      : null;
+
+    const vmrFeedValid =
+  Number.isFinite(spotVolume) &&
+  Number.isFinite(marketCap) &&
+  marketCap > 0;
+
+const vmrDisplay = vmrFeedValid
+  ? spotVolume / marketCap
+  : CALIBRATION.defaults.vmr;
+
+const cachedVmr30 = safeNumber(state.engine?.confl?.vmr30, null);
+const cachedBaselineSource = state.engine?.confl?.vmrBaselineSource || "Cached/Fallback";
+const vmr30Display =
+  Number.isFinite(market?.vmrBaseline30d) && market.vmrBaseline30d > 0
+    ? market.vmrBaseline30d
+    : (Number.isFinite(cachedVmr30) && cachedVmr30 > 0 ? cachedVmr30 : CALIBRATION.defaults.vmr30);
+const vmrBaselineSource =
+  Number.isFinite(market?.vmrBaseline30d) && market.vmrBaseline30d > 0
+    ? "CoinGecko 30D live"
+    : (Number.isFinite(cachedVmr30) && cachedVmr30 > 0 ? cachedBaselineSource : "Fallback");
+
+const vmrRel =
+  Number.isFinite(vmr30Display) && vmr30Display > 0
+    ? vmrDisplay / vmr30Display
+    : CALIBRATION.defaults.vmrRel;
+
+    state.dataWarnings = warnings;
+    state.valuationSource = state.useManualOverride ? "Manual override" : valuationSourceLabel;
+    state.engine = {
+      px, marketCap, spotVolume,
+      confl: {
+        spotPrice: px,
+        mvrv,
+        vmr: vmrDisplay,
+        vmr30: vmr30Display,
+        vmrRel,
+        vmrModel: vmrDisplay,
+        vmr30Model: vmr30Display,
+        vmrBaselineSource,
+        realizedPrice,
+        computedRealizedPrice,
+        realizedCap,
+        vmrFeedValid,
+      },
+      ohlc: {
+        "1Y": y1, "1M": d1M?.ohlc, "1W": d1W?.ohlc,
+        "1D": d1D?.ohlc, "4H": d4H?.ohlc, "1H": d1H?.ohlc,
+      },
+      ind: {
+  "1M": d1M?.ind,
+  "1W": d1W?.ind,
+  "1D": d1D?.ind,
+  "4H": d4H?.ind,
+  "1H": d1H?.ind,
+},
+      sourceSummary: {
+        spot: "CoinGecko",
+        technicals: "Binance K-Lines → computed in app",
+        valuation: valuationSourceLabel,
+      },
+    };
+    state.lastRefresh = new Date();
+    saveCache();
+  } catch (e) {
+    state.error = (e && e.message) ? e.message : "Refresh failed";
+  } finally {
+    state.isRefreshing = false;
+    render();
+    if (!state.error) refreshLiveVmrBaseline30d();
+  }
+}
+
+/* ---------- Derived forecast (recomputed every render) ---------- */
+function computeAllPV() {
+  const out = {};
+  TF_ALL.forEach((t) => { out[t] = calcPivots(state.engine.ohlc?.[t]); });
+  return out;
+}
+function computeForecast(allPV) {
+  const px = state.engine.px;
+  let pwS = 0, pwM = 0;
+  TF_ALL.forEach((t) => {
+    const w = META[t].w;
+    pwS += pivotScore(allPV[t], px) * w;
+    pwM += 4 * w;
+  });
+  const pivPct = pwM > 0 ? (pwS / pwM) * 100 : 0;
+
+  let tSum = 0, tN = 0;
+  TF.forEach((t) => { tSum += indScore(state.engine.ind?.[t], px); tN += 9; });
+  const techPct = tN > 0 ? (tSum / tN) * 100 : 0;
+
+  const conflRaw = confluenceScore({ ind: state.engine.ind, confl: state.engine.confl });
+  const conflPct = clamp((conflRaw / 15) * 100, -100, 100);
+  const comp = pivPct * 0.45 + techPct * 0.3 + conflPct * 0.25;
+  const pBullStructural = clamp(logisticFromScore(comp), 0.01, 0.99);
+  const pBullHistorical = calibratedHistoricalBullProbability(px, allPV["1M"], state.engine.ind, state.engine.confl);
+  const pBullBase = clamp(pBullStructural * 0.55 + pBullHistorical * 0.45, 0.01, 0.99);
+
+  const monthlyPivot = allPV["1M"];
+  const monthlyRsi = safeNumber(state.engine.ind?.["1M"]?.rsi2, 50);
+  const mvrv = safeNumber(state.engine.confl?.mvrv, CALIBRATION.defaults.mvrv);
+  const vmr = safeNumber(state.engine.confl?.vmr, CALIBRATION.defaults.vmr);
+  const foundationBuy = Number.isFinite(px) && Number.isFinite(monthlyPivot?.S1) && Number.isFinite(monthlyPivot?.P)
+    ? (px >= monthlyPivot.S1 && px <= monthlyPivot.P && monthlyRsi < 15 && mvrv < 1.3 && vmr >= 0.05)
+    : false;
+  const bullTrendAllowed = Number.isFinite(px) && Number.isFinite(monthlyPivot?.P) ? px >= monthlyPivot.P : false;
+  const bearGateActive = !foundationBuy && !bullTrendAllowed;
+  const gates = { foundationBuy, bullTrendAllowed, bearGateActive };
+
+  let pBull = pBullBase;
+  if (foundationBuy) pBull = Math.max(pBull, 0.7);
+  if (bearGateActive) pBull = Math.min(pBull, 0.49);
+  pBull = clamp(pBull, 0.01, 0.99);
+  const pBear = 1 - pBull;
+  const regime = regimeLabel({
+    pBull, px,
+    piv1Y: allPV["1Y"], piv1M: allPV["1M"],
+    ind: state.engine.ind, confl: state.engine.confl, gates
+  });
+
+  const yPivot = allPV["1Y"];
+  const sigma = clamp(
+    0.04
+    + Math.abs(safeRatio(px - safeNumber(monthlyPivot?.P, px), Math.max(px || 1, 1), 0)) * 0.8
+    + Math.abs(safeRatio(px - safeNumber(yPivot?.P, px), Math.max(px || 1, 1), 0)) * 0.5,
+    0.03, 0.22
+  );
+  const bias = (pBull - 0.5) * 2;
+  const exp30  = Number.isFinite(px) ? px * (1 + bias * sigma * 0.55) : null;
+  const exp90  = Number.isFinite(px) ? px * (1 + bias * sigma * 1.1)  : null;
+  const exp180 = Number.isFinite(px) ? px * (1 + bias * sigma * 1.6)  : null;
+  const exp360 = Number.isFinite(px) ? px * (1 + bias * sigma * 2.1)  : null;
+
+  const allocation = buildAllocation({
+    pBull, pBear, regime, allPV, capital: state.capital,
+    ind: state.engine.ind, confl: state.engine.confl, gates
+  });
+  const valuationBand = mvrvBandLabel(state.engine.confl?.mvrv);
+
+  return {
+    pivPct, techPct, conflRaw, conflPct, comp,
+    pBullStructural, pBullHistorical, pBull, pBear,
+    regime, valuationBand, sigma,
+    exp30, exp90, exp180, exp360,
+    allocation, gates,
+  };
+}
+
+/* ---------- DOM helpers ---------- */
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function miniStatHTML(label, value, tone, sub) {
+  const toneCol = tone || "#e0e3ec";
+  const subHtml = sub ? `<div class="mini-sub">${sub}</div>` : "";
+  return `
+    <div class="crd">
+      <div class="mini-label">${escapeHtml(label)}</div>
+      <div class="mini-value" style="color:${toneCol};">${value}</div>
+      ${subHtml}
+    </div>
+  `;
+}
+function pivotCardHTML(tf, pv, px, titleClass) {
+  const piv = pv || {};
+  return `
+    <div class="crd">
+      <div class="pivot-head">
+        <div class="${titleClass}">${META[tf].label}</div>
+        <div class="pivot-zone">${escapeHtml(pivotZone(piv, px))}</div>
+      </div>
+      <div class="pivot-grid-3">
+        <div class="piv-r">R1 ${f$(piv.R1)}</div>
+        <div class="piv-r">R2 ${f$(piv.R2)}</div>
+        <div class="piv-r">R3 ${f$(piv.R3)}</div>
+        <div class="piv-r">R4 ${f$(piv.R4)}</div>
+        <div class="piv-r">R5 ${f$(piv.R5)}</div>
+        <div class="piv-p">P ${f$(piv.P)}</div>
+        <div class="piv-s">S1 ${f$(piv.S1)}</div>
+        <div class="piv-s">S2 ${f$(piv.S2)}</div>
+        <div class="piv-s">S3 ${f$(piv.S3)}</div>
+        <div class="piv-s">S4 ${f$(piv.S4)}</div>
+        <div class="piv-s">S5 ${f$(piv.S5)}</div>
+      </div>
+    </div>
+  `;
+}
+function pivotCardHTML2col(tf, pv, px) {
+  const piv = pv || {};
+  return `
+    <div class="crd">
+      <div class="pivot-head">
+        <div class="pivot-title-sm">${escapeHtml(META[tf].label)}</div>
+        <div class="pivot-zone">${escapeHtml(pivotZone(piv, px))}</div>
+      </div>
+      <div class="pivot-grid-2">
+        <div class="piv-r">R1 ${f$(piv.R1)}</div>
+        <div class="piv-r">R2 ${f$(piv.R2)}</div>
+        <div class="piv-r">R3 ${f$(piv.R3)}</div>
+        <div class="piv-r">R4 ${f$(piv.R4)}</div>
+        <div class="piv-r">R5 ${f$(piv.R5)}</div>
+        <div class="piv-p">P ${f$(piv.P)}</div>
+        <div class="piv-s">S1 ${f$(piv.S1)}</div>
+        <div class="piv-s">S2 ${f$(piv.S2)}</div>
+        <div class="piv-s">S3 ${f$(piv.S3)}</div>
+        <div class="piv-s">S4 ${f$(piv.S4)}</div>
+        <div class="piv-s">S5 ${f$(piv.S5)}</div>
+      </div>
+    </div>
+  `;
+}
+function indCardHTML(t, ind) {
+  const eis = eisColor(ind);
+  const eisCls = eis === "green" ? "eis-green" : eis === "red" ? "eis-red" : "eis-blue";
+  return `
+    <div class="crd">
+      <div class="pivot-head">
+        <div class="pivot-title-sm">${t}</div>
+        <div class="pivot-zone ${eisCls}">${eis.toUpperCase()}</div>
+      </div>
+      <div class="ind-grid">
+        <div>EMA10 ${f$(ind?.ema10)}</div>
+        <div>EMA20 ${f$(ind?.ema20)}</div>
+        <div>EMA50 ${f$(ind?.ema50)}</div>
+        <div>EMA13 ${f$(ind?.ema13)}</div>
+        <div>RSI2 ${f1(ind?.rsi2)}</div>
+<div>EFI2 ${
+  Number.isFinite(ind?.efi2)
+    ? (Math.abs(ind.efi2) >= 1e9
+        ? (ind.efi2 / 1e9).toFixed(2) + "B"
+        : (ind.efi2 / 1e6).toFixed(2) + "M")
+    : "—"
+}</div>
+        <div>MACD ${f1(ind?.macdL)}</div>
+        <div>Signal ${f1(ind?.macdS)}</div>
+        <div>Hist ${f1(ind?.macdH)}</div>
+        <div>Prev Hist ${f1(ind?.macdHPrev)}</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const allPV = computeAllPV();
+  const forecast = computeForecast(allPV);
+  const engine = state.engine;
+
+  const tone = forecast.pBull >= 0.5 ? "#00e676" : "#ff4757";
+  const isLiveFeed = !state.error && !!state.lastRefresh;
+  const riskState = (() => {
+    const regime = forecast.regime;
+    const mvrv = safeNumber(engine.confl?.mvrv, null);
+    const realizedGap = safeRatio(engine.px, safeNumber(engine.confl?.realizedPrice, null), null);
+    if (regime === "Distribution (Valuation)" || regime === "Weak / Bearish Bias" || regime === "Capital Preservation / Drawdown") return "Risk-Off";
+    if (Number.isFinite(mvrv) && mvrv > 2.0) return "Risk-Off";
+    if (Number.isFinite(realizedGap) && realizedGap > 2.0) return "Risk-Off";
+    return "Risk-On";
+  })();
+
+  /* Header sub-line */
+  const subEl = document.getElementById("subLine");
+  if (state.isRefreshing) subEl.textContent = "Refreshing...";
+  else if (state.lastRefresh) subEl.textContent = "Updated " + state.lastRefresh.toLocaleString();
+  else subEl.textContent = "Waiting for first refresh";
+
+  /* Refresh button */
+  const refreshBtn = document.getElementById("refreshBtn");
+  refreshBtn.classList.toggle("refreshing", state.isRefreshing);
+  refreshBtn.disabled = state.isRefreshing;
+
+  /* Live badge */
+  document.getElementById("liveLabel").textContent = isLiveFeed ? "Live" : "Offline";
+
+  /* Risk badge */
+  const riskEl = document.getElementById("riskBadge");
+  riskEl.textContent = riskState;
+  riskEl.className = "badge " + (riskState === "Risk-On" ? "badge-risk-on" : "badge-risk-off");
+
+  /* Warnings */
+  const warnCard = document.getElementById("warnCard");
+  const warnWrap = document.getElementById("warnWrap");
+  if (state.dataWarnings.length) {
+    warnCard.classList.remove("hidden");
+    warnWrap.innerHTML = state.dataWarnings.map((w) => `<div class="warn-pill">${escapeHtml(w)}</div>`).join("");
+  } else {
+    warnCard.classList.add("hidden");
+  }
+
+  /* Top stats */
+  const topGrid = document.getElementById("topGrid");
+  topGrid.classList.toggle("mobile", state.isMobile);
+  topGrid.innerHTML = [
+    miniStatHTML("Spot Price", f$(engine.px), null, null),
+    miniStatHTML(
+      "Bull Probability",
+      fp(forecast.pBull),
+      tone,
+      `Historical ${fp(forecast.pBullHistorical)} · Structural ${fp(forecast.pBullStructural)}`
+    ),
+    miniStatHTML("Regime", escapeHtml(forecast.regime), tone, null),
+    miniStatHTML("Yearly Pivot", f$(allPV["1Y"]?.P), null, `Zone ${escapeHtml(pivotZone(allPV["1Y"], engine.px))}`),
+    miniStatHTML("Monthly Pivot", f$(allPV["1M"]?.P), null, `Zone ${escapeHtml(pivotZone(allPV["1M"], engine.px))}`),
+  ].join("");
+
+  /* Tabs */
+  const tabs = [
+    ["overview", "Overview"],
+    ["pivots",   "Pivot Stack"],
+    ["prob",     "Probability"],
+    ["alloc",    "Allocation"],
+    ["matrix",   "Indicator Matrix"],
+    ["market",   "Market Pack"],
+  ];
+  const tabRow = document.getElementById("tabRow");
+  tabRow.innerHTML = tabs.map(([k, l]) =>
+    `<button class="tab-btn ${state.tab === k ? "active" : ""}" data-tab="${k}">${l}</button>`
+  ).join("");
+  tabRow.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.tab = btn.dataset.tab;
+      render();
+    });
+  });
+
+  /* Panels */
+  const panels = {
+    overview: document.getElementById("tabOverview"),
+    pivots:   document.getElementById("tabPivots"),
+    prob:     document.getElementById("tabProb"),
+    alloc:    document.getElementById("tabAlloc"),
+    matrix:   document.getElementById("tabMatrix"),
+    market:   document.getElementById("tabMarket"),
+  };
+  Object.entries(panels).forEach(([k, el]) => {
+    el.classList.toggle("hidden", state.tab !== k);
+  });
+
+  /* Overview */
+  if (state.tab === "overview") {
+    panels.overview.innerHTML = `
+      <div class="grid-auto-220">
+        ${miniStatHTML("Monthly RSI (2)", f1(engine.ind?.["1M"]?.rsi2), "#ffab00", `SMA (14) ${f1(engine.ind?.["1M"]?.sma14rsi)}`)}
+        ${miniStatHTML("Confluence Score", f1(forecast.conflRaw), "#18ffff", `Composite ${f1(forecast.comp)}`)}
+        ${miniStatHTML("30D Expected",  f$(forecast.exp30),  tone, null)}
+        ${miniStatHTML("90D Expected",  f$(forecast.exp90),  tone, null)}
+        ${miniStatHTML("180D Expected", f$(forecast.exp180), tone, null)}
+        ${miniStatHTML("360D Expected", f$(forecast.exp360), tone, null)}
+      </div>
+      <div class="sec-label">1Y × 1M Pivot Map</div>
+      <div class="grid-auto-320">
+        ${pivotCardHTML("1Y", allPV["1Y"], engine.px, "pivot-title")}
+        ${pivotCardHTML("1M", allPV["1M"], engine.px, "pivot-title")}
+      </div>
+    `;
+  }
+
+  /* Pivot Stack */
+  if (state.tab === "pivots") {
+    panels.pivots.innerHTML = `
+      <div class="grid-auto-220">
+        ${TF_ALL.map((t) => pivotCardHTML2col(t, allPV[t], engine.px)).join("")}
+      </div>
+    `;
+  }
+
+  /* Probability */
+  if (state.tab === "prob") {
+    panels.prob.innerHTML = `
+      <div class="grid-auto-220">
+        ${miniStatHTML("Bull Conviction", bucketProbability(forecast.pBull), tone, null)}
+        ${miniStatHTML("Bear Probability", fp(forecast.pBear), "#ff4757", null)}
+        ${miniStatHTML("Monthly Sigma", fp(forecast.sigma), "#b388ff", null)}
+        ${miniStatHTML(
+          "Calibration",
+          `AUC ${CALIBRATION.cvAuc.toFixed(2)}`,
+          "#18ffff",
+          `Brier ${CALIBRATION.cvBrier.toFixed(2)} · &gt; +10% forward 6M return`
+        )}
+      </div>
+    `;
+  }
+
+  /* Allocation */
+  if (state.tab === "alloc") {
+    const a = forecast.allocation || {};
+    panels.alloc.innerHTML = `
+      <div class="grid-auto-220">
+        ${miniStatHTML("Action", escapeHtml(a.action || "—"), tone, null)}
+        ${miniStatHTML("Deploy Now", fp(a.deployPct), tone, null)}
+        ${miniStatHTML("Core",       fp(a.corePct),       null, null)}
+        ${miniStatHTML("Tactical",   fp(a.tacticalPct),   null, null)}
+        ${miniStatHTML("Dry Powder", fp(a.dryPowderPct),  null, null)}
+        ${miniStatHTML("Hedge",      fp(a.hedgePct),      null, null)}
+        ${miniStatHTML("Add Levels",  `${f$(a.add1)} · ${f$(a.add2)}`,  null, f$(a.add3))}
+        ${miniStatHTML("Trim Levels", `${f$(a.trim1)} · ${f$(a.trim2)}`, null, f$(a.trim3))}
+      </div>
+    `;
+  }
+
+  /* Indicator Matrix */
+  if (state.tab === "matrix") {
+    panels.matrix.innerHTML = `
+      <div class="grid-auto-220">
+        ${miniStatHTML(
+          "MVRV",
+          f4(engine.confl?.mvrv),
+          "#ffab00",
+          `<span style="color:#7a8299;">${escapeHtml(mvrvBandLabel(engine.confl?.mvrv))} · Range ${
+            engine.confl?.mvrv < 1.0 ? "(&lt;1.0)"
+            : engine.confl?.mvrv < 1.3 ? "(1.0–1.3)"
+            : engine.confl?.mvrv < 1.8 ? "(1.3–1.8)"
+            : engine.confl?.mvrv < 2.4 ? "(1.8–2.4)"
+            : "(≥2.4)"
+          }</span>`
+        )}
+${miniStatHTML(
+  "MVRV",
+  state.valuationSource === "CoinMetrics MVRV" ? "Valid" : "Fallback",
+  state.valuationSource === "CoinMetrics MVRV" ? "#00e676" : "#ffab00",
+  null
+)}
+        ${miniStatHTML(
+          "VMR",
+          f4(engine.confl?.vmr),
+          "#18ffff",
+          `Baseline ${f4(engine.confl?.vmr30)} · Relative ${fx(engine.confl?.vmrRel)}`
+        )}
+${miniStatHTML(
+          "VMR",
+          engine.confl?.vmrFeedValid ? "Valid" : "Fallback",
+          engine.confl?.vmrFeedValid ? "#00e676" : "#ffab00",
+          null
+        )}
+        ${miniStatHTML(
+  "Realized Price",
+  f$(engine.confl?.realizedPrice),
+  null,
+  `${state.valuationSource} · Realized Cap ${
+    Number.isFinite(engine.confl?.realizedCap)
+      ? "$" + (engine.confl.realizedCap / 1e12).toFixed(2) + " Trillion"
+      : "—"
+  }`
+)}
+      </div>
+
+      <div class="sec-label">Indicator Matrix</div>
+      <div class="grid-auto-230 ind-matrix">
+        ${TF.map((t) => indCardHTML(t, engine.ind?.[t])).join("")}
+      </div>
+    `;
+
+  }
+
+  /* Market Pack */
+  if (state.tab === "market") {
+    panels.market.innerHTML = `
+      <div class="grid-auto-220">
+        ${miniStatHTML("Spot Price", f$(engine.px), null, null)}
+        ${miniStatHTML(
+  "Market Cap",
+  Number.isFinite(engine.marketCap)
+    ? "$" + (engine.marketCap / 1e12).toFixed(2) + " Trillion"
+    : "—",
+  null,
+  null
+)}
+${miniStatHTML(
+  "24H Volume",
+  Number.isFinite(engine.spotVolume)
+    ? "$" + (engine.spotVolume / 1e9).toFixed(1) + " Billion"
+    : "—",
+  null,
+  null
+)}
+${miniStatHTML(
+  "MVRV Valuation",
+  "CoinMetrics",
+ null,
+  `MVRV ${f4(state.engine.confl?.mvrv)}`
+)}
+        ${miniStatHTML(
+          "Live Data Feeds",
+          "CoinGecko + Binance",
+          null,
+          `Refreshed ${state.lastRefresh ? state.lastRefresh.toLocaleTimeString() : "—"}`
+        )}
+      </div>
+    `;
+  }
+}
+
+/* ---------- Events / boot ---------- */
+document.getElementById("refreshBtn").addEventListener("click", () => { hydrateEngine(); });
+window.addEventListener("resize", () => {
+  const next = window.innerWidth < 768;
+  if (next !== state.isMobile) { state.isMobile = next; render(); }
+});
+
+function startPolling() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (state.live) refreshInterval = setInterval(hydrateEngine, 120000);
+}
+
+loadCache();
+render();
+hydrateEngine();
+startPolling();
+</script>
+</body>
+</html>

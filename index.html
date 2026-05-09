@@ -230,7 +230,7 @@
   min-height: 170px;
 }
 
-  /* V11.1 mobile speed improvements */
+  /* V1.1 mobile speed improvements */
   .crd { content-visibility: auto; contain-intrinsic-size: 160px; }
   @media (max-width: 768px) {
     body { padding: 12px; }
@@ -292,7 +292,7 @@
 
 <script>
 /* ==========================================================
-   BTC MODEL V11.1 — Fast HTML port
+   BTC MODEL V1.1 — Fast HTML port
    Preserves exact engine, thresholds, colours, fonts, layout
    ========================================================== */
 
@@ -676,11 +676,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 9000) {
   }
 }
 function saveCache() {
-  try { localStorage.setItem("btc_model_v11_1_live_baseline_cache", JSON.stringify({ engine: state.engine, lastRefresh: state.lastRefresh ? state.lastRefresh.toISOString() : null })); } catch (_) {}
+  try { localStorage.setItem("btc_model_v1_1_live_baseline_cache", JSON.stringify({ engine: state.engine, lastRefresh: state.lastRefresh ? state.lastRefresh.toISOString() : null })); } catch (_) {}
 }
 function loadCache() {
   try {
-    const raw = localStorage.getItem("btc_model_v11_1_live_baseline_cache");
+    const raw = localStorage.getItem("btc_model_v1_1_live_baseline_cache");
     if (!raw) return false;
     const cached = JSON.parse(raw);
     if (!cached || !cached.engine) return false;
